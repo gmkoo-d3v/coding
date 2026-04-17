@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
@@ -35,23 +35,56 @@ jobs:
 
           moved=0
           for d in [0-9][0-9][0-9][0-9]-*; do
-            [ -d "$d" ] || continue
-            echo "Moving directory: $d"
-            mv "$d" LeetCode/
-            moved=1
+            if [ -d "$d" ]; then
+              echo "Moving directory: $d"
+              mv "$d" LeetCode/
+              moved=1
+            fi
           done
 
           echo "moved=$moved" >> "$GITHUB_OUTPUT"
 
-      - name: Commit & Push changes
-        if: steps.move.outputs.moved == '1'
+      - name: Update README links
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 << 'PY'
+          from pathlib import Path
+          import re
 
-          git add -A
-          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          readme = Path("README.md")
+          if not readme.exists():
+              print("README.md not found, skipping")
+              raise SystemExit(0)
 
-          git commit -m "chore: Move LeetCode solutions to LeetCode folder"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          text = readme.read_text(encoding="utf-8")
+
+          # 예:
+          # https://github.com/gmkoo-d3v/coding/tree/master/0002-add-two-numbers
+          # https://github.com/gmkoo-d3v/coding/tree/main/0002-add-two-numbers
+          # -> https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/0002-add-two-numbers
+          pattern = re.compile(
+              r'(https://github\.com/[^/\s]+/[^/\s]+/tree/)(?:main|master)/((?!LeetCode/)[0-9]{4}-[A-Za-z0-9._-]+)'
+          )
+
+          updated_text, count = pattern.subn(r'\1main/LeetCode/\2', text)
+
+          if count > 0:
+              readme.write_text(updated_text, encoding="utf-8")
+              print(f"Updated {count} link(s) in README.md")
+          else:
+              print("No README links needed updating")
+          PY
+
+      - name: Commit & Push changes
+        shell: bash
+        run: |
+          if git status --porcelain | grep .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git add -A
+            git commit -m "chore: move LeetCode solutions and fix README links"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          else
+            echo "No changes to commit"
+          fi
