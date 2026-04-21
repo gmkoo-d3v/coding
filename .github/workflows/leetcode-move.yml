@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - '[0-9][0-9][0-9][0-9]-*/**'
+      - 'db/**'
 
 permissions:
   contents: write
@@ -34,7 +35,8 @@ jobs:
           git diff --name-only HEAD^ HEAD || true
 
           moved=0
-          for d in [0-9][0-9][0-9][0-9]-*; do
+
+          for d in [0-9][0-9][0-9][0-9]-* db; do
             if [ -d "$d" ]; then
               echo "Moving directory: $d"
               mv "$d" LeetCode/
@@ -58,10 +60,6 @@ jobs:
 
           text = readme.read_text(encoding="utf-8")
 
-          # 예:
-          # https://github.com/gmkoo-d3v/coding/tree/master/0002-add-two-numbers
-          # https://github.com/gmkoo-d3v/coding/tree/main/0002-add-two-numbers
-          # -> https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/0002-add-two-numbers
           pattern = re.compile(
               r'(https://github\.com/[^/\s]+/[^/\s]+/tree/)(?:main|master)/((?!LeetCode/)[0-9]{4}-[A-Za-z0-9._-]+)'
           )
