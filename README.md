@@ -23,4 +23,8 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 |  |
 | ------- |
 | [0002-add-two-numbers](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/0002-add-two-numbers) |
+## Database
+|  |
+| ------- |
+| [0175-combine-two-tables](https://github.com/gmkoo-d3v/coding/tree/master/0175-combine-two-tables) |
 <!---LeetCode Topics End-->
