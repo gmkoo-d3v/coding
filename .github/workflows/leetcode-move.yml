@@ -1,54 +1,63 @@
-name: Move LeetCode Solutions
+name: Normalize LeetHub Output
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - '[0-9][0-9][0-9][0-9]-*/**'
-      - 'db/**'
+      - 'README.md'
 
 permissions:
   contents: write
 
+concurrency:
+  group: normalize-leethub-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   move-files:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 2
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
-      - name: Move LeetCode solutions
-        id: move
+      - name: Sync latest branch state
         shell: bash
         run: |
-          shopt -s nullglob
+          git pull --rebase origin "${GITHUB_REF_NAME}" || true
 
-          echo "Current directory contents:"
-          ls -la
+      - name: Move LeetHub output into LeetCode folder and fix README links
+        id: normalize
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
 
           mkdir -p LeetCode
 
-          echo "Changed files in this push:"
-          git diff --name-only HEAD^ HEAD || true
+          # 1) 루트의 문제 폴더를 LeetCode/ 아래로 정규화
+          for d in [0-9][0-9][0-9][0-9]-*; do
+            [ -d "$d" ] || continue
 
-          moved=0
+            target="LeetCode/$d"
+            echo "Normalizing directory: $d -> $target"
 
-          for d in [0-9][0-9][0-9][0-9]-* db; do
-            if [ -d "$d" ]; then
-              echo "Moving directory: $d"
+            if [ -d "$target" ]; then
+              cp -a "$d"/. "$target"/
+              rm -rf "$d"
+            else
               mv "$d" LeetCode/
-              moved=1
             fi
           done
 
-          echo "moved=$moved" >> "$GITHUB_OUTPUT"
-
-      - name: Update README links
-        shell: bash
-        run: |
+          # 2) 루트 README 링크 교정
           python3 << 'PY'
           from pathlib import Path
           import re
@@ -59,30 +68,56 @@ jobs:
               raise SystemExit(0)
 
           text = readme.read_text(encoding="utf-8")
+          original = text
 
-          pattern = re.compile(
-              r'(https://github\.com/[^/\s]+/[^/\s]+/tree/)(?:main|master)/((?!LeetCode/)[0-9]{4}-[A-Za-z0-9._-]+)'
+          # 절대 링크:
+          # https://github.com/<owner>/<repo>/tree/master/0002-add-two-numbers
+          # https://github.com/<owner>/<repo>/tree/main/0002-add-two-numbers
+          # -> https://github.com/<owner>/<repo>/tree/main/LeetCode/0002-add-two-numbers
+          text = re.sub(
+              r'(https://github\.com/[^/\s]+/[^/\s]+/tree/)(?:main|master)/((?!LeetCode/)[0-9]{4}-[A-Za-z0-9._-]+)',
+              r'\1main/LeetCode/\2',
+              text,
           )
 
-          updated_text, count = pattern.subn(r'\1main/LeetCode/\2', text)
+          # 상대 링크:
+          # (0002-add-two-numbers) 또는 (./0002-add-two-numbers)
+          # -> (LeetCode/0002-add-two-numbers)
+          text = re.sub(
+              r'\]\((?:\./)?((?!LeetCode/)[0-9]{4}-[A-Za-z0-9._-]+)\)',
+              r'](LeetCode/\1)',
+              text,
+          )
 
-          if count > 0:
-              readme.write_text(updated_text, encoding="utf-8")
-              print(f"Updated {count} link(s) in README.md")
+          if text != original:
+              readme.write_text(text, encoding="utf-8")
+              print("README.md updated")
           else:
-              print("No README links needed updating")
+              print("README.md did not need changes")
           PY
 
-      - name: Commit & Push changes
+          if git status --porcelain | grep . >/dev/null; then
+            echo "changed=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.normalize.outputs.changed == '1'
         shell: bash
         run: |
-          if git status --porcelain | grep .; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
 
-            git add -A
-            git commit -m "chore: move LeetCode solutions and fix README links"
-            git push origin HEAD:${GITHUB_REF_NAME}
-          else
-            echo "No changes to commit"
-          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "chore: normalize LeetHub output into LeetCode folder"
+
+          # 실행 중 새 push가 들어왔을 수 있으니 한 번 더 최신화
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: No changes
+        if: steps.normalize.outputs.changed != '1'
+        run: echo "No changes to commit"
