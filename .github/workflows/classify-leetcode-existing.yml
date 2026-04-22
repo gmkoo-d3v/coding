@@ -1,4 +1,4 @@
-name: Normalize LeetCode Structure
+name: Classify LeetCode by Category and Difficulty
 
 on:
   workflow_dispatch:
@@ -7,53 +7,165 @@ permissions:
   contents: write
 
 jobs:
-  normalize:
+  classify:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Normalize folders
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Reclassify LeetCode folders
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s globstar nullglob
 
-          mkdir -p LeetCode
+          python <<'PY'
+          import json
+          import os
+          import re
+          import shutil
+          import subprocess
+          import time
+          import urllib.request
 
-          moved=0
+          ROOT = os.getcwd()
+          LC_ROOT = os.path.join(ROOT, "LeetCode")
+          os.makedirs(LC_ROOT, exist_ok=True)
 
-          for d in **/[0-9][0-9][0-9][0-9]-*; do
-            if [ ! -d "$d" ]; then
-              continue
-            fi
+          folder_pattern = re.compile(r"^(\d+)-(.+)$")
 
-            if [[ "$d" == LeetCode/* ]]; then
-              continue
-            fi
+          def normalize_name(value: str) -> str:
+              value = value.strip()
+              value = value.replace(" ", "-")
+              value = re.sub(r"[^A-Za-z0-9_-]", "-", value)
+              value = re.sub(r"-+", "-", value)
+              return value.strip("-") or "Unknown"
 
-            name="$(basename "$d")"
-            target="LeetCode/$name"
+          def fetch_question(title_slug: str):
+              url = "https://leetcode.com/graphql"
+              payload = {
+                  "query": """
+                  query getQuestionDetail($titleSlug: String!) {
+                    question(titleSlug: $titleSlug) {
+                      categoryTitle
+                      difficulty
+                      titleSlug
+                      topicTags {
+                        name
+                        slug
+                      }
+                    }
+                  }
+                  """,
+                  "variables": {
+                      "titleSlug": title_slug
+                  }
+              }
 
-            if [ -e "$target" ]; then
-              echo "[SKIP] target exists: $target"
-              continue
-            fi
+              req = urllib.request.Request(
+                  url,
+                  data=json.dumps(payload).encode("utf-8"),
+                  headers={
+                      "Content-Type": "application/json",
+                      "User-Agent": "github-actions-leetcode-classifier"
+                  },
+                  method="POST"
+              )
 
-            echo "[MOVE] $d -> $target"
-            mv "$d" "$target"
-            moved=1
-          done
+              with urllib.request.urlopen(req, timeout=20) as resp:
+                  return json.loads(resp.read().decode("utf-8"))
 
-          if [ "$moved" -eq 1 ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add .
-            git commit -m "chore: normalize LeetCode folder structure" || echo "No changes to commit"
-            git push
-          else
-            echo "No folders moved"
-          fi
+          def get_classification(title_slug: str):
+              try:
+                  result = fetch_question(title_slug)
+                  question = result.get("data", {}).get("question")
+
+                  if not question:
+                      return "Unknown", "Unknown"
+
+                  category = question.get("categoryTitle") or "Unknown"
+                  difficulty = question.get("difficulty") or "Unknown"
+
+                  return normalize_name(category), normalize_name(difficulty)
+              except Exception as e:
+                  print(f"[WARN] Failed to classify {title_slug}: {e}")
+                  return "Unknown", "Unknown"
+
+          def collect_problem_dirs(base_dir: str):
+              collected = []
+
+              for current_root, dirs, files in os.walk(base_dir):
+                  # category/difficulty 아래까지 모두 뒤지므로,
+                  # 이미 재배치된 것도 basename 기준으로 다시 판별 가능
+                  for d in dirs:
+                      if folder_pattern.match(d):
+                          full_path = os.path.join(current_root, d)
+                          collected.append(full_path)
+
+              return sorted(set(collected))
+
+          problem_dirs = collect_problem_dirs(LC_ROOT)
+
+          if not problem_dirs:
+              print("[INFO] No problem directories found under LeetCode/")
+              raise SystemExit(0)
+
+          moved = False
+
+          for src in problem_dirs:
+              name = os.path.basename(src)
+              match = folder_pattern.match(name)
+              if not match:
+                  continue
+
+              _, title_slug = match.groups()
+
+              category, difficulty = get_classification(title_slug)
+              target_dir = os.path.join(LC_ROOT, category, difficulty)
+              target = os.path.join(target_dir, name)
+
+              # 이미 올바른 위치면 skip
+              if os.path.abspath(src) == os.path.abspath(target):
+                  print(f"[SKIP] already classified: {src}")
+                  continue
+
+              os.makedirs(target_dir, exist_ok=True)
+
+              if os.path.exists(target):
+                  print(f"[SKIP] target already exists: {target}")
+                  continue
+
+              print(f"[MOVE] {src} -> {target}")
+              shutil.move(src, target)
+              moved = True
+              time.sleep(0.2)
+
+          # 빈 디렉토리 정리
+          for current_root, dirs, files in os.walk(LC_ROOT, topdown=False):
+              if current_root == LC_ROOT:
+                  continue
+              if not os.listdir(current_root):
+                  os.rmdir(current_root)
+                  print(f"[CLEAN] removed empty dir: {current_root}")
+
+          if moved:
+              subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+              subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+              subprocess.run(["git", "add", "."], check=True)
+
+              diff = subprocess.run(["git", "diff", "--cached", "--quiet"], check=False)
+              if diff.returncode != 0:
+                  subprocess.run(["git", "commit", "-m", "chore: classify LeetCode problems by category and difficulty"], check=True)
+                  subprocess.run(["git", "push"], check=True)
+              else:
+                  print("[INFO] No changes to commit.")
+          else:
+              print("[INFO] No folders moved.")
+          PY
