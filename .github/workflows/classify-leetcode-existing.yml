@@ -1,0 +1,176 @@
+name: Classify Existing LeetCode Solutions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Classify existing solution folders
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python <<'PY'
+          import json
+          import os
+          import re
+          import shutil
+          import subprocess
+          import sys
+          import time
+          import urllib.request
+
+          ROOT = os.getcwd()
+          TARGET_ROOT = os.path.join(ROOT, "LeetCode")
+
+          os.makedirs(TARGET_ROOT, exist_ok=True)
+
+          # 이미 분류 대상 루트가 아닌 폴더들 제외
+          EXCLUDE_DIRS = {
+              ".git",
+              ".github",
+              "LeetCode",
+              ".venv",
+              "node_modules",
+              "__pycache__",
+          }
+
+          # 문제 폴더명 패턴 예:
+          # 0001-two-sum
+          # 1-two-sum
+          folder_pattern = re.compile(r"^(\d+)-(.+)$")
+
+          def normalize_tag(tag: str) -> str:
+              tag = tag.strip().lower()
+              tag = re.sub(r"[ /]+", "-", tag)
+              tag = re.sub(r"[^a-z0-9\-_]", "", tag)
+              return tag or "unknown"
+
+          def graphql_request(title_slug: str):
+              url = "https://leetcode.com/graphql"
+              payload = {
+                  "query": """
+                  query getQuestionDetail($titleSlug: String!) {
+                    question(titleSlug: $titleSlug) {
+                      topicTags {
+                        name
+                        slug
+                      }
+                    }
+                  }
+                  """,
+                  "variables": {
+                      "titleSlug": title_slug
+                  }
+              }
+
+              data = json.dumps(payload).encode("utf-8")
+              req = urllib.request.Request(
+                  url,
+                  data=data,
+                  headers={
+                      "Content-Type": "application/json",
+                      "User-Agent": "GitHub-Actions-LeetCode-Classifier"
+                  },
+                  method="POST"
+              )
+
+              with urllib.request.urlopen(req, timeout=20) as resp:
+                  return json.loads(resp.read().decode("utf-8"))
+
+          def get_primary_topic_slug(title_slug: str) -> str:
+              try:
+                  result = graphql_request(title_slug)
+                  question = result.get("data", {}).get("question")
+                  if not question:
+                      return "unknown"
+
+                  topic_tags = question.get("topicTags", [])
+                  if not topic_tags:
+                      return "unknown"
+
+                  # 첫 번째 topic tag 기준
+                  first_tag = topic_tags[0]
+                  return normalize_tag(first_tag.get("slug") or first_tag.get("name") or "unknown")
+              except Exception as e:
+                  print(f"[WARN] Failed to fetch topic for slug={title_slug}: {e}")
+                  return "unknown"
+
+          def move_folder(src_path: str, dst_path: str):
+              os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+
+              if os.path.exists(dst_path):
+                  print(f"[SKIP] Destination already exists: {dst_path}")
+                  return False
+
+              shutil.move(src_path, dst_path)
+              print(f"[MOVE] {src_path} -> {dst_path}")
+              return True
+
+          moved_any = False
+
+          entries = sorted(os.listdir(ROOT))
+
+          for name in entries:
+              src_path = os.path.join(ROOT, name)
+
+              if not os.path.isdir(src_path):
+                  continue
+
+              if name in EXCLUDE_DIRS:
+                  continue
+
+              match = folder_pattern.match(name)
+              if not match:
+                  print(f"[SKIP] Not a LeetCode-style folder: {name}")
+                  continue
+
+              problem_number, title_slug = match.groups()
+
+              topic_slug = get_primary_topic_slug(title_slug)
+              dest_dir = os.path.join(TARGET_ROOT, topic_slug)
+              dest_path = os.path.join(dest_dir, name)
+
+              changed = move_folder(src_path, dest_path)
+              moved_any = moved_any or changed
+
+              # 너무 빠르게 연속 호출하지 않도록 약간 대기
+              time.sleep(0.3)
+
+          if moved_any:
+              subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+              subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+              subprocess.run(["git", "add", "."], check=True)
+
+              diff_check = subprocess.run(
+                  ["git", "diff", "--cached", "--quiet"],
+                  check=False
+              )
+
+              if diff_check.returncode != 0:
+                  subprocess.run(
+                      ["git", "commit", "-m", "chore: classify existing LeetCode solutions by topic"],
+                      check=True
+                  )
+                  subprocess.run(["git", "push"], check=True)
+              else:
+                  print("[INFO] No staged changes to commit.")
+          else:
+              print("[INFO] Nothing moved.")
+          PY
