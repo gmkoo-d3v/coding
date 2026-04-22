@@ -2,4 +2,4 @@
 select p.email as Email
 from Person p
 group by email
-having count(*) > 1;
+having count(Email) > 1;
