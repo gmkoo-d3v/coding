@@ -32,5 +32,6 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 | [0183-customers-who-never-order](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0183-customers-who-never-order) |
 | [0196-delete-duplicate-emails](LeetCode/Database/Easy/0196-delete-duplicate-emails) |
 | [0197-rising-temperature](LeetCode/Database/Easy/0197-rising-temperature) |
+| [0511-game-play-analysis-i](LeetCode/Database/Easy/0511-game-play-analysis-i) |
 | [0577-employee-bonus](LeetCode/Database/Easy/0577-employee-bonus) |
 <!---LeetCode Topics End-->
