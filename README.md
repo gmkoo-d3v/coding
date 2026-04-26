@@ -19,6 +19,7 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 |  |
 | ------- |
 | [0002-add-two-numbers](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Algorithms/Medium/0002-add-two-numbers) |
+| [0258-add-digits](LeetCode/Algorithms/Easy/0258-add-digits) |
 ## Recursion
 |  |
 | ------- |
@@ -34,4 +35,12 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 | [0197-rising-temperature](LeetCode/Database/Easy/0197-rising-temperature) |
 | [0511-game-play-analysis-i](LeetCode/Database/Easy/0511-game-play-analysis-i) |
 | [0577-employee-bonus](LeetCode/Database/Easy/0577-employee-bonus) |
+## Simulation
+|  |
+| ------- |
+| [0258-add-digits](LeetCode/Algorithms/Easy/0258-add-digits) |
+## Number Theory
+|  |
+| ------- |
+| [0258-add-digits](LeetCode/Algorithms/Easy/0258-add-digits) |
 <!---LeetCode Topics End-->
