@@ -43,4 +43,12 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 |  |
 | ------- |
 | [0258-add-digits](LeetCode/Algorithms/Easy/0258-add-digits) |
+## Divide and Conquer
+|  |
+| ------- |
+| [0190-reverse-bits](LeetCode/Algorithms/Easy/0190-reverse-bits) |
+## Bit Manipulation
+|  |
+| ------- |
+| [0190-reverse-bits](LeetCode/Algorithms/Easy/0190-reverse-bits) |
 <!---LeetCode Topics End-->
