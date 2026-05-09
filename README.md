@@ -39,6 +39,7 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 | [0586-customer-placing-the-largest-number-of-orders](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0586-customer-placing-the-largest-number-of-orders) |
 | [0595-big-countries](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0595-big-countries) |
 | [0596-classes-with-at-least-5-students](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0596-classes-with-at-least-5-students) |
+| [0607-sales-person](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0607-sales-person) |
 ## Simulation
 |  |
 | ------- |
