@@ -41,6 +41,7 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 | [0596-classes-with-at-least-5-students](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0596-classes-with-at-least-5-students) |
 | [0607-sales-person](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0607-sales-person) |
 | [0610-triangle-judgement](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0610-triangle-judgement) |
+| [0620-not-boring-movies](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0620-not-boring-movies) |
 ## Simulation
 |  |
 | ------- |
