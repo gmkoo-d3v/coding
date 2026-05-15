@@ -45,6 +45,7 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 | [0620-not-boring-movies](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0620-not-boring-movies) |
 | [0627-swap-sex-of-employees](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/0627-swap-sex-of-employees) |
 | [1068-product-sales-analysis-i](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/1068-product-sales-analysis-i) |
+| [1084-sales-analysis-iii](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Database/Easy/1084-sales-analysis-iii) |
 ## Simulation
 |  |
 | ------- |
