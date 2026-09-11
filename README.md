@@ -19,6 +19,7 @@ This is an auto push repository for Baekjoon, Programmers, Leetcode
 |  |
 | ------- |
 | [0002-add-two-numbers](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Algorithms/Medium/0002-add-two-numbers) |
+| [0009-palindrome-number](https://github.com/gmkoo-d3v/coding/tree/main/LeetCode/Algorithms/Easy/0009-palindrome-number) |
 | [0258-add-digits](LeetCode/Algorithms/Easy/0258-add-digits) |
 ## Recursion
 |  |
