@@ -1,10 +1,10 @@
 # [level 0] [PCCE 기출문제] 1번 / 문자 출력 - 340207 
 
-[문제 링크](https://school.programmers.co.kr/learn/courses/30/lessons/340207?language=python3) 
+[문제 링크](https://school.programmers.co.kr/learn/courses/30/lessons/340207?language=java) 
 
 ### 성능 요약
 
-메모리: 8.85 MB, 시간: 9.99 ms
+메모리: 64.3 MB, 시간: 67.29 ms
 
 ### 구분
 
@@ -16,7 +16,7 @@
 
 ### 제출 일자
 
-2026년 09월 16일 19:24:06
+2026년 09월 16일 19:24:47
 
 ### 문제 설명
 
