@@ -1,2 +1,2 @@
-str = input().strip()
+str = input()
 print(str.swapcase())
