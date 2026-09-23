@@ -1,18 +1,16 @@
 def solution(array):
-    count = {}
 
+    dic = {}
     for num in array:
-        count[num] = count.get(num, 0) + 1
-
-    max_count = max(count.values())
-
-    modes = []
-
-    for num, cnt in count.items():
+        dic[num] = array.count(num)
+    
+    max_count = max(dic.values())
+    
+    answer = []
+    for i, cnt in dic.items():
         if cnt == max_count:
-            modes.append(num)
-
-    if len(modes) == 1:
-        return modes[0]
-
+            answer.append(i)
+    if len(answer) == 1:
+        return answer[0]
     return -1
+    
